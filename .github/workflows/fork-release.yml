@@ -1,0 +1,182 @@
+name: Build fork releases
+
+on:
+  push:
+    branches: [main]
+    tags: ["fork-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # Keep release builds within the memory and disk limits of standard runners.
+  CARGO_BUILD_JOBS: "2"
+  CARGO_PROFILE_RELEASE_DEBUG: "0"
+  CARGO_PROFILE_RELEASE_LTO: "false"
+  CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+  CARGO_TARGET_DIR: ${{ github.workspace }}/target
+  ZED_UPDATE_EXPLANATION: "Download updates for this fork from https://github.com/gu1p/zed/releases/latest."
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: github.repository == 'gu1p/zed'
+    name: Build ${{ matrix.platform }} (${{ matrix.architecture }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macOS
+            architecture: aarch64
+            runner: macos-15
+            target: aarch64-apple-darwin
+          - platform: macOS
+            architecture: x86_64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - platform: Linux
+            architecture: x86_64
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - platform: Linux
+            architecture: aarch64
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Free Linux build space
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h .
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: ./script/linux
+
+      - name: Set up Node for DMG packaging
+        if: runner.os == 'macOS'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install the repository's Rust toolchain
+        run: rustup show active-toolchain
+
+      - name: Cache Rust build dependencies
+        uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          key: fork-release-v1-${{ matrix.target }}
+          cache-on-failure: true
+
+      - name: Prepare fork build
+        run: |
+          printf 'stable\n' > crates/zed/RELEASE_CHANNEL
+          mkdir -p dist target/release
+          rustc --version
+          df -h .
+
+      - name: Download WASI SDK
+        if: runner.os == 'Linux'
+        run: ./script/download-wasi-sdk
+
+      - name: Build ad-hoc signed DMG
+        if: runner.os == 'macOS'
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          BUILD_ARCHITECTURE: ${{ matrix.architecture }}
+          MACOS_SIGNING_KEY: "-"
+        run: |
+          ./script/bundle-mac "$BUILD_TARGET"
+          app="target/$BUILD_TARGET/release/dmg/Zed.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          hdiutil verify "target/$BUILD_TARGET/release/Zed-$BUILD_ARCHITECTURE.dmg"
+          cp "target/$BUILD_TARGET/release/Zed-$BUILD_ARCHITECTURE.dmg" dist/
+          cp "target/zed-remote-server-macos-$BUILD_ARCHITECTURE.gz" dist/
+
+      - name: Build Linux archive
+        if: runner.os == 'Linux'
+        env:
+          BUILD_ARCHITECTURE: ${{ matrix.architecture }}
+          CC: clang
+          CXX: clang++
+        run: |
+          ./script/bundle-linux
+          cp "target/release/zed-linux-$BUILD_ARCHITECTURE.tar.gz" dist/
+          cp "target/zed-remote-server-linux-$BUILD_ARCHITECTURE.gz" dist/
+          tar -tzf "dist/zed-linux-$BUILD_ARCHITECTURE.tar.gz" > /dev/null
+
+      - name: Upload packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: packages-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  release:
+    name: Publish downloads
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: packages-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verify downloads and generate checksums
+        working-directory: dist
+        run: |
+          for architecture in aarch64 x86_64; do
+            test -s "Zed-$architecture.dmg"
+            test -s "zed-linux-$architecture.tar.gz"
+            test -s "zed-remote-server-macos-$architecture.gz"
+            test -s "zed-remote-server-linux-$architecture.gz"
+          done
+          sha256sum -- *.dmg *.gz > SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="fork-build-$GITHUB_RUN_NUMBER"
+          fi
+          {
+            printf 'Built from commit %s.\n\n' "$GITHUB_SHA"
+            cat FORK_RELEASES.md
+          } > "$RUNNER_TEMP/release-notes.md"
+          if ! gh release view "$tag" > /dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --draft \
+              --title "Zed fork build $GITHUB_RUN_NUMBER" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release upload "$tag" dist/* --clobber
+          gh release edit "$tag" --draft=false --latest \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          printf 'Download: https://github.com/%s/releases/tag/%s\n' "$GH_REPO" "$tag" >> "$GITHUB_STEP_SUMMARY"
