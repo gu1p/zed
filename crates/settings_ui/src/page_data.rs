@@ -5338,7 +5338,7 @@ fn window_and_layout_page() -> SettingsPage {
 }
 
 fn panels_page() -> SettingsPage {
-    fn project_panel_section() -> [SettingsPageItem; 30] {
+    fn project_panel_section() -> [SettingsPageItem; 31] {
         [
             SettingsPageItem::SectionHeader("Project Panel"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -5796,6 +5796,29 @@ fn panels_page() -> SettingsPage {
                             .project_panel
                             .get_or_insert_default()
                             .diagnostic_badges = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: "Group Test Files",
+                description: "Collect test files in a muted, collapsible Tests group at the end of each folder.",
+                field: Box::new(SettingField {
+                    organization_override: None,
+                    json_path: Some("project_panel.group_test_files"),
+                    pick: |settings_content| {
+                        settings_content
+                            .project_panel
+                            .as_ref()?
+                            .group_test_files
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .project_panel
+                            .get_or_insert_default()
+                            .group_test_files = value;
                     },
                 }),
                 metadata: None,

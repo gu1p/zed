@@ -9,7 +9,7 @@ use settings::{
 };
 use ui::scrollbars::{ScrollbarVisibility, ShowScrollbar};
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq, RegisterSetting)]
+#[derive(Deserialize, Debug, Clone, PartialEq, RegisterSetting)]
 pub struct ProjectPanelSettings {
     pub button: bool,
     pub hide_gitignore: bool,
@@ -37,6 +37,8 @@ pub struct ProjectPanelSettings {
     pub sort_order: ProjectPanelSortOrder,
     pub diagnostic_badges: bool,
     pub git_status_indicator: bool,
+    pub group_test_files: bool,
+    pub test_file_patterns: Vec<String>,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
@@ -145,6 +147,8 @@ impl Settings for ProjectPanelSettings {
             sort_order: project_panel.sort_order.unwrap(),
             diagnostic_badges: project_panel.diagnostic_badges.unwrap(),
             git_status_indicator: project_panel.git_status_indicator.unwrap(),
+            group_test_files: project_panel.group_test_files.unwrap(),
+            test_file_patterns: project_panel.test_file_patterns.unwrap(),
         }
     }
 }

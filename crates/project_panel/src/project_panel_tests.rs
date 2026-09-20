@@ -659,7 +659,7 @@ async fn test_auto_collapse_dir_paths(cx: &mut gpui::TestAppContext) {
         .unwrap();
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -746,7 +746,7 @@ async fn test_auto_collapse_dir_paths(cx: &mut gpui::TestAppContext) {
             .unwrap();
         let cx = &mut VisualTestContext::from_window(window.into(), cx);
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     auto_fold_dirs: true,
@@ -3912,7 +3912,7 @@ async fn test_select_first_last(cx: &mut gpui::TestAppContext) {
     );
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_root: true,
@@ -4037,7 +4037,7 @@ async fn test_collapse_selected_entry_scrolls_into_view(cx: &mut TestAppContext)
 
     for sticky_scroll in [false, true] {
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     sticky_scroll,
@@ -4690,7 +4690,7 @@ async fn test_rename_with_hide_root(cx: &mut gpui::TestAppContext) {
         let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: true,
@@ -4732,7 +4732,7 @@ async fn test_rename_with_hide_root(cx: &mut gpui::TestAppContext) {
         let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: true,
@@ -5104,7 +5104,7 @@ async fn test_external_paths_for_dragged_selection_resolves_folded_directory(
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -5401,7 +5401,7 @@ async fn test_dragged_selection_resolve_entry(cx: &mut gpui::TestAppContext) {
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -5568,7 +5568,7 @@ async fn test_drag_marked_entries_in_folded_directories(cx: &mut gpui::TestAppCo
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -7392,7 +7392,7 @@ async fn test_deletion_gitignored(cx: &mut gpui::TestAppContext) {
 
     // Test 1: Auto selection with one gitignored file next to the deleted file
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_gitignore: true,
@@ -7493,7 +7493,7 @@ async fn test_nested_deletion_gitignore(cx: &mut gpui::TestAppContext) {
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_gitignore: true,
@@ -8191,7 +8191,7 @@ async fn test_expand_all_for_entry(cx: &mut gpui::TestAppContext) {
 
     // Test 1: When auto-fold is enabled
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -8254,7 +8254,7 @@ async fn test_expand_all_for_entry(cx: &mut gpui::TestAppContext) {
 
     // Test 2: When auto-fold is disabled
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: false,
@@ -8423,7 +8423,7 @@ async fn test_collapse_all_for_entry(cx: &mut gpui::TestAppContext) {
     // Test 2: With auto-fold enabled
     {
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     auto_fold_dirs: true,
@@ -8479,7 +8479,7 @@ async fn test_collapse_all_for_entry(cx: &mut gpui::TestAppContext) {
     // Test 3: With auto-fold disabled
     {
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     auto_fold_dirs: false,
@@ -9090,7 +9090,7 @@ async fn test_expand_all_entries_via_window_dispatch(cx: &mut gpui::TestAppConte
         .unwrap();
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_reveal_entries: false,
@@ -9231,7 +9231,7 @@ async fn test_expand_all_entries_with_auto_fold(cx: &mut gpui::TestAppContext) {
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -9360,7 +9360,7 @@ async fn test_create_entries_without_selection_hide_root(cx: &mut gpui::TestAppC
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_root: true,
@@ -9507,7 +9507,7 @@ async fn test_context_menu_new_file_in_empty_hidden_root(cx: &mut gpui::TestAppC
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_root: true,
@@ -10163,7 +10163,7 @@ async fn test_hide_root(cx: &mut gpui::TestAppContext) {
         let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: false,
@@ -10201,7 +10201,7 @@ async fn test_hide_root(cx: &mut gpui::TestAppContext) {
 
         // Set hide_root to true
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: true,
@@ -10247,7 +10247,7 @@ async fn test_hide_root(cx: &mut gpui::TestAppContext) {
 
         // Set hide_root to true
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: true,
@@ -10286,7 +10286,7 @@ async fn test_hide_root(cx: &mut gpui::TestAppContext) {
         let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
         cx.update(|_, cx| {
-            let settings = *ProjectPanelSettings::get_global(cx);
+            let settings = ProjectPanelSettings::get_global(cx).clone();
             ProjectPanelSettings::override_global(
                 ProjectPanelSettings {
                     hide_root: false,
@@ -10595,7 +10595,7 @@ async fn test_hide_hidden_entries(cx: &mut gpui::TestAppContext) {
     let cx = &mut VisualTestContext::from_window(window.into(), cx);
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_hidden: false,
@@ -10645,7 +10645,7 @@ async fn test_hide_hidden_entries(cx: &mut gpui::TestAppContext) {
     );
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_hidden: true,
@@ -10674,7 +10674,7 @@ async fn test_hide_hidden_entries(cx: &mut gpui::TestAppContext) {
     );
 
     panel.update_in(cx, |panel, window, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 hide_hidden: false,
@@ -11039,7 +11039,7 @@ async fn test_sort_mode_default_fallback(cx: &mut gpui::TestAppContext) {
     init_test(cx);
 
     // Verify that when sort_mode is not specified, it defaults to DirectoriesFirst
-    let default_settings = cx.read(|cx| *ProjectPanelSettings::get_global(cx));
+    let default_settings = cx.read(|cx| ProjectPanelSettings::get_global(cx).clone());
     assert_eq!(
         default_settings.sort_mode,
         settings::ProjectPanelSortMode::DirectoriesFirst,
@@ -11408,7 +11408,7 @@ async fn test_preserve_temporary_unfolded_active_index_on_blur_from_context_menu
     });
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -11781,7 +11781,7 @@ async fn open_panel_with_files(
     cx: &mut gpui::TestAppContext,
 ) -> (Entity<ProjectPanel>, VisualTestContext) {
     cx.update(|cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(ProjectPanelSettings { dock, ..settings }, cx);
     });
 
@@ -11846,7 +11846,7 @@ async fn run_create_file_in_folded_path_case(
     });
 
     cx.update(|_, cx| {
-        let settings = *ProjectPanelSettings::get_global(cx);
+        let settings = ProjectPanelSettings::get_global(cx).clone();
         ProjectPanelSettings::override_global(
             ProjectPanelSettings {
                 auto_fold_dirs: true,
@@ -12773,4 +12773,421 @@ fn entry_row_bounds(panel: &ProjectPanel, entry_id: ProjectEntryId) -> Bounds<Pi
         point(viewport.left(), row_top),
         size(viewport.size.width, row_height),
     )
+}
+
+#[gpui::test]
+async fn test_test_groups_navigation_and_file_actions(cx: &mut TestAppContext) {
+    init_test(cx);
+    cx.update(|cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                settings
+                    .project_panel
+                    .get_or_insert_default()
+                    .group_test_files = Some(true);
+            });
+        });
+    });
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree(
+        "/root",
+        json!({
+            "main.rs": "", "main_test.rs": "", "test_parser.rs": "",
+            "nested": { "lib.rs": "", "lib_tests.rs": "" },
+            "empty": {}, "test_directory.rs": {}
+        }),
+    )
+    .await;
+    let project = Project::test(fs.clone(), ["/root".as_ref()], cx).await;
+    let window = cx.add_window(|window, cx| MultiWorkspace::test_new(project.clone(), window, cx));
+    let workspace = window
+        .read_with(cx, |mw, _| mw.workspace().clone())
+        .unwrap();
+    let cx = &mut VisualTestContext::from_window(window.into(), cx);
+    let panel = workspace.update_in(cx, ProjectPanel::new);
+    cx.run_until_parked();
+    toggle_expand_dir(&panel, "root/nested", cx);
+    panel.update_in(cx, |panel, _, _| panel.selection = None);
+    assert_eq!(
+        visible_entries_as_strings(&panel, 0..50, cx),
+        [
+            "v root",
+            "    > empty",
+            "    v nested",
+            "          lib.rs",
+            "        > Tests (1)",
+            "    > test_directory.rs",
+            "      main.rs",
+            "    > Tests (2)"
+        ]
+    );
+    let group_id = panel.update_in(cx, |panel, _, _| {
+        *panel
+            .state
+            .test_groups
+            .groups
+            .iter()
+            .find(|(_, group)| group.path.is_empty())
+            .unwrap()
+            .0
+    });
+    panel.update_in(cx, |panel, window, cx| {
+        let group = &panel.state.test_groups.groups[&group_id];
+        panel.selection = Some(SelectedEntry {
+            worktree_id: group.parent.worktree_id,
+            entry_id: group_id,
+        });
+        assert!(panel.selected_entry(cx).is_none());
+        assert!(panel.effective_entries().is_empty());
+        panel.delete(&Delete { skip_prompt: true }, window, cx);
+        panel.rename(&Rename, window, cx);
+        assert!(panel.state.edit_state.is_none());
+        panel.expand_selected_entry(&ExpandSelectedEntry, window, cx);
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        &visible_entries_as_strings(&panel, 0..50, cx)[7..],
+        [
+            "    v Tests (2)  <== selected",
+            "          main_test.rs",
+            "          test_parser.rs"
+        ]
+    );
+    panel.update_in(cx, |panel, window, cx| {
+        panel.select_next(&SelectNext, window, cx)
+    });
+    panel.update_in(cx, |panel, window, cx| {
+        let path = panel.selected_entry_project_path(cx).unwrap();
+        assert_eq!(path.path.as_unix_str(), "main_test.rs");
+        assert_eq!(panel.effective_entries().len(), 1);
+        panel.collapse_selected_entry(&CollapseSelectedEntry, window, cx);
+        assert_eq!(panel.selection.unwrap().entry_id, group_id);
+        panel.collapse_selected_entry(&CollapseSelectedEntry, window, cx);
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        visible_entries_as_strings(&panel, 0..50, cx)
+            .last()
+            .unwrap(),
+        "    > Tests (2)  <== selected"
+    );
+    panel.update_in(cx, |panel, window, cx| {
+        let worktree = project
+            .read(cx)
+            .visible_worktrees(cx)
+            .next()
+            .unwrap()
+            .read(cx);
+        assert!(worktree.entry_for_path(rel_path("main_test.rs")).is_some());
+        let id = worktree
+            .entry_for_path(rel_path("test_parser.rs"))
+            .unwrap()
+            .id;
+        panel
+            .reveal_entry(project.clone(), id, false, window, cx)
+            .unwrap();
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        visible_entries_as_strings(&panel, 0..50, cx)
+            .last()
+            .unwrap(),
+        "          test_parser.rs  <== selected  <== marked"
+    );
+    panel.update_in(cx, |panel, window, cx| {
+        panel.collapse_all_entries(&CollapseAllEntries, window, cx)
+    });
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        assert!(panel.state.test_groups.expanded.is_empty())
+    });
+    panel.update_in(cx, |panel, window, cx| {
+        panel.expand_all_entries(&ExpandAllEntries, window, cx)
+    });
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        assert!(
+            panel.state.test_groups.groups.values().all(|group| panel
+                .state
+                .test_groups
+                .expanded
+                .contains(&group.parent))
+        );
+    });
+    fs.rename(
+        Path::new("/root/main_test.rs"),
+        Path::new("/root/main_old.rs"),
+        Default::default(),
+    )
+    .await
+    .unwrap();
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        let group = &panel.state.test_groups.groups[&group_id];
+        assert_eq!(group.files.len(), 1);
+        assert_eq!(group.files[0].path.as_unix_str(), "test_parser.rs");
+        panel.selection = Some(SelectedEntry {
+            worktree_id: group.parent.worktree_id,
+            entry_id: group_id,
+        });
+    });
+    fs.remove_file(Path::new("/root/test_parser.rs"), Default::default())
+        .await
+        .unwrap();
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, cx| {
+        assert!(!panel.state.test_groups.groups.contains_key(&group_id));
+        assert!(panel.selected_entry(cx).unwrap().1.path.is_empty());
+    });
+}
+
+#[gpui::test]
+async fn test_test_groups_sorting_settings_and_worktrees(cx: &mut TestAppContext) {
+    init_test(cx);
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree(
+        "/root",
+        json!({
+            "a_test.rs": "", "b.rs": "", "c": { "d": { "x_test.rs": "" } },
+            "test_last.rust": "", "z.rs": "", "custom.spec.ts": ""
+        }),
+    )
+    .await;
+    fs.insert_tree("/other", json!({ "a_test.rs": "", "b.rs": "" }))
+        .await;
+    let project = Project::test(fs.clone(), ["/root".as_ref(), "/other".as_ref()], cx).await;
+    let window = cx.add_window(|window, cx| MultiWorkspace::test_new(project.clone(), window, cx));
+    let workspace = window
+        .read_with(cx, |mw, _| mw.workspace().clone())
+        .unwrap();
+    let cx = &mut VisualTestContext::from_window(window.into(), cx);
+    let panel = workspace.update_in(cx, ProjectPanel::new);
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        assert!(panel.state.test_groups.groups.is_empty())
+    });
+    for sort_mode in [
+        settings::ProjectPanelSortMode::DirectoriesFirst,
+        settings::ProjectPanelSortMode::FilesFirst,
+        settings::ProjectPanelSortMode::Mixed,
+    ] {
+        cx.update(|_, cx| {
+            cx.update_global::<SettingsStore, _>(|store, cx| {
+                store.update_user_settings(cx, |settings| {
+                    let panel = settings.project_panel.get_or_insert_default();
+                    panel.group_test_files = Some(true);
+                    panel.auto_fold_dirs = Some(true);
+                    panel.sort_mode = Some(sort_mode);
+                });
+            })
+        });
+        cx.run_until_parked();
+        panel.update_in(cx, |panel, window, cx| {
+            panel.expand_all_entries(&ExpandAllEntries, window, cx)
+        });
+        cx.run_until_parked();
+        panel.update_in(cx, |panel, _, _| {
+            assert_eq!(panel.state.test_groups.groups.len(), 3);
+            for visible in &panel.state.visible_entries {
+                let root_group_index = visible
+                    .entries
+                    .iter()
+                    .position(|entry| {
+                        panel
+                            .state
+                            .test_groups
+                            .groups
+                            .get(&entry.id)
+                            .is_some_and(|group| group.path.is_empty())
+                    })
+                    .unwrap();
+                let group = &panel.state.test_groups.groups[&visible.entries[root_group_index].id];
+                assert_eq!(
+                    root_group_index + 1 + group.files.len(),
+                    visible.entries.len()
+                );
+                for file in &group.files {
+                    assert_eq!(file.path.components().count(), 1);
+                }
+            }
+        });
+        // This helper also asserts every rendered entry has a distinct ID.
+        visible_entries_as_strings(&panel, 0..100, cx);
+    }
+    cx.update(|_, cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                settings
+                    .project_panel
+                    .get_or_insert_default()
+                    .test_file_patterns = Some(vec!["*.spec.ts".into()]);
+            });
+        })
+    });
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        assert_eq!(panel.state.test_groups.groups.len(), 1);
+        assert_eq!(
+            panel
+                .state
+                .test_groups
+                .groups
+                .values()
+                .next()
+                .unwrap()
+                .files[0]
+                .path
+                .as_unix_str(),
+            "custom.spec.ts"
+        );
+    });
+    panel.update_in(cx, |panel, _, _| {
+        let (id, group) = panel.state.test_groups.groups.iter().next().unwrap();
+        panel.selection = Some(SelectedEntry {
+            worktree_id: group.parent.worktree_id,
+            entry_id: *id,
+        });
+    });
+    cx.update(|_, cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                settings
+                    .project_panel
+                    .get_or_insert_default()
+                    .test_file_patterns = Some(vec![]);
+            });
+        })
+    });
+    cx.run_until_parked();
+    panel.update_in(cx, |panel, _, _| {
+        assert!(panel.state.test_groups.groups.is_empty())
+    });
+    panel.update_in(cx, |panel, _, _| {
+        assert!(
+            panel
+                .index_for_selection(panel.selection.unwrap())
+                .is_some()
+        );
+    });
+}
+
+#[gpui::test]
+async fn test_test_groups_hidden_root_and_status(cx: &mut TestAppContext) {
+    init_test(cx);
+    cx.update(|cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                let panel = settings.project_panel.get_or_insert_default();
+                panel.group_test_files = Some(true);
+                panel.hide_root = Some(true);
+            });
+        })
+    });
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree("/root", json!({ "lib.rs": "", "lib_test.rs": "" }))
+        .await;
+    let project = Project::test(fs, ["/root".as_ref()], cx).await;
+    let window = cx.add_window(|window, cx| MultiWorkspace::test_new(project.clone(), window, cx));
+    let workspace = window
+        .read_with(cx, |mw, _| mw.workspace().clone())
+        .unwrap();
+    let cx = &mut VisualTestContext::from_window(window.into(), cx);
+    let panel = workspace.update_in(cx, ProjectPanel::new);
+    cx.run_until_parked();
+    assert_eq!(
+        visible_entries_as_strings(&panel, 0..20, cx),
+        ["  lib.rs", "> Tests (1)"]
+    );
+    panel.update_in(cx, |panel, window, cx| {
+        let (id, group) = panel.state.test_groups.groups.iter().next().unwrap();
+        let id = *id;
+        let worktree_id = group.parent.worktree_id;
+        let path = group.files[0].path.clone();
+        panel
+            .diagnostics
+            .insert((worktree_id, path.clone()), DiagnosticSeverity::ERROR);
+        panel.diagnostic_counts.insert(
+            (worktree_id, path),
+            DiagnosticCount {
+                error_count: 2,
+                warning_count: 1,
+            },
+        );
+        let (tree_id, entry) = panel.entry_at_index(1).unwrap();
+        let entry = entry.to_owned();
+        let paths = panel.state.visible_entries[0]
+            .entries
+            .iter()
+            .map(|entry| entry.path.clone())
+            .collect();
+        let details = panel.details_for_entry(
+            &entry,
+            tree_id,
+            rel_path("root"),
+            &paths,
+            GitSummary::UNCHANGED,
+            None,
+            window,
+            cx,
+        );
+        assert_eq!(details.filename_text_color, Color::Muted);
+        assert_eq!(details.diagnostic_severity, Some(DiagnosticSeverity::ERROR));
+        assert_eq!(details.diagnostic_count.unwrap().error_count, 2);
+        let details = panel.details_for_entry(
+            &entry,
+            tree_id,
+            rel_path("root"),
+            &paths,
+            GitSummary::UNTRACKED,
+            None,
+            window,
+            cx,
+        );
+        assert_ne!(details.filename_text_color, Color::Muted);
+        panel.set_test_group_expanded(id, true, window, cx);
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        visible_entries_as_strings(&panel, 0..20, cx),
+        ["  lib.rs", "v Tests (1)  <== selected", "      lib_test.rs"]
+    );
+}
+
+#[gpui::test]
+async fn test_test_groups_mouse_toggle(cx: &mut TestAppContext) {
+    init_test_with_editor(cx);
+    cx.update(|cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                settings
+                    .project_panel
+                    .get_or_insert_default()
+                    .group_test_files = Some(true);
+            });
+        });
+    });
+    let (panel, mut cx) = open_panel_with_tree(
+        json!({ "lib.rs": "", "lib_test.rs": "" }),
+        size(px(800.), px(600.)),
+        cx,
+    )
+    .await;
+    let (group_id, position) = panel.update_in(&mut cx, |panel, _, _| {
+        let id = *panel.state.test_groups.groups.keys().next().unwrap();
+        (id, entry_row_bounds(panel, id).center())
+    });
+    cx.simulate_click(position, Modifiers::none());
+    cx.run_until_parked();
+    panel.update_in(&mut cx, |panel, _, _| {
+        let group = &panel.state.test_groups.groups[&group_id];
+        assert!(panel.state.test_groups.expanded.contains(&group.parent));
+        assert_eq!(panel.selection.unwrap().entry_id, group_id);
+    });
+    cx.simulate_click(position, Modifiers::none());
+    cx.run_until_parked();
+    panel.update_in(&mut cx, |panel, _, _| {
+        let group = &panel.state.test_groups.groups[&group_id];
+        assert!(!panel.state.test_groups.expanded.contains(&group.parent));
+        assert_eq!(panel.selection.unwrap().entry_id, group_id);
+    });
 }

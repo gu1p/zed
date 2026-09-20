@@ -913,6 +913,14 @@ pub struct ProjectPanelSettingsContent {
     ///
     /// Default: false
     pub git_status_indicator: Option<bool>,
+    /// Group test files under a muted, collapsible Tests row in each directory.
+    /// This only changes the project panel; file paths and search are unchanged.
+    ///
+    /// Default: false
+    pub group_test_files: Option<bool>,
+    /// Filename globs identifying test files when `group_test_files` is enabled.
+    /// Patterns match the filename, independently in every directory.
+    pub test_file_patterns: Option<Vec<String>>,
 }
 
 /// Controls the width of the git diff hunk indicators in the gutter.

@@ -56,6 +56,43 @@ Directory** to collapse it again.
 
 ![Project Panel: Auto Fold Directories Disabled](https://images.zed.dev/docs/project-panel/auto-fold-dirs-false.png)
 
+### Test File Groups {#test-file-groups}
+
+Enable **Group Test Files** in the Settings Editor under **Panels > Project Panel**
+to collect test files in a muted, collapsible **Tests (count)** row at the end of
+each folder. Groups start collapsed. Revealing a test file expands its group.
+Expanding all folders also expands their test groups.
+
+Or add this to your settings.json:
+
+```json [settings]
+{
+  "project_panel": {
+    "group_test_files": true
+  }
+}
+```
+
+The default patterns match `*_test.rs`, `*_tests.rs`, `test_*.rs`, and `tests.rs`,
+as well as the same names with a `.rust` extension. Override
+`project_panel.test_file_patterns` to use other filename globs, for example:
+
+```json [settings]
+{
+  "project_panel": {
+    "group_test_files": true,
+    "test_file_patterns": ["*_test.rs", "test_*.rs", "*.test.ts", "*.spec.ts"]
+  }
+}
+```
+
+Patterns match filenames in every folder. An empty pattern list disables grouping.
+The groups only affect the panel: files keep their original paths and remain
+available in search and the file finder. Expand a group to open, rename, move, or
+delete its files normally. The group itself cannot be renamed, moved, or deleted.
+Git changes retain their colors, and collapsed groups show their combined Git
+status and diagnostic indicator.
+
 ## Selecting Multiple Entries
 
 Hold `shift` while pressing the up/down arrow keys to mark additional entries.

@@ -881,6 +881,8 @@ impl VsCodeSettings {
             auto_open: None,
             diagnostic_badges: None,
             git_status_indicator: None,
+            group_test_files: None,
+            test_file_patterns: None,
         };
 
         if let (Some(false), Some(false)) = (
