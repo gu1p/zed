@@ -5338,7 +5338,7 @@ fn window_and_layout_page() -> SettingsPage {
 }
 
 fn panels_page() -> SettingsPage {
-    fn project_panel_section() -> [SettingsPageItem; 31] {
+    fn project_panel_section() -> [SettingsPageItem; 32] {
         [
             SettingsPageItem::SectionHeader("Project Panel"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -5823,6 +5823,25 @@ fn panels_page() -> SettingsPage {
                 }),
                 metadata: None,
                 files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: "File Badges",
+                description: "Add emoji or built-in icons to files or ancestor folders using filename globs and saved-content regexes. Project rules replace user rules.",
+                field: Box::new(
+                    SettingField {
+                        organization_override: None,
+                        json_path: Some("project_panel.file_badges"),
+                        pick: |settings| settings.project.project_panel.as_ref()
+                            .and_then(|panel| panel.file_badges.as_ref())
+                            .or_else(|| settings.project_panel.as_ref()?.file_badges.as_ref()),
+                        write: |settings, value, _| {
+                            settings.project_panel.get_or_insert_default().file_badges = value;
+                        },
+                    }
+                    .unimplemented(),
+                ),
+                metadata: None,
+                files: USER | PROJECT,
             }),
             SettingsPageItem::SettingItem(SettingItem {
                 title: "Git Status Indicator",

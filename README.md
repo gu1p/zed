@@ -24,6 +24,22 @@ Other platforms are not yet available:
 - [Building Zed for Linux](./docs/src/development/linux.md)
 - [Building Zed for Windows](./docs/src/development/windows.md)
 
+After installing the build dependencies, run `make` (or `make install`) on macOS
+or Linux to build and install the current checkout in release mode. Run
+`make upgrade` after updating your checkout to rebuild and replace that
+installation. Both commands use your local source files, including uncommitted
+changes.
+
+On macOS, install Xcode's Metal Toolchain with
+`xcodebuild -downloadComponent MetalToolchain` if
+`xcrun --sdk macosx metal --version` fails.
+
+The release channel in `crates/zed/RELEASE_CHANNEL` determines the app name
+(currently `Zed Dev` on macOS). macOS installs into `/Applications`, while Linux
+installs into `~/.local`. Both provide `~/.local/bin/zed`; add `~/.local/bin` to
+your `PATH` to use it. Upstream automatic updates are disabled for these local
+builds. Quit Zed before replacing an existing installation.
+
 ### Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for ways you can contribute to Zed.

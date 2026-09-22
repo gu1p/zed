@@ -967,6 +967,7 @@
     // Whether to show the git status indicator next to file names in the project panel.
     "git_status_indicator": false,
     "group_test_files": false,
+    "file_badges": [],
     "test_file_patterns": [
       "*_test.rs",
       "*_tests.rs",

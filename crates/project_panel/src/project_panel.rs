@@ -1,3 +1,4 @@
+mod file_badges;
 pub mod project_panel_settings;
 mod test_groups;
 mod undo;
@@ -167,6 +168,8 @@ pub struct ProjectPanel {
     last_reported_update: Instant,
     update_visible_entries_task: UpdateVisibleEntriesTask,
     undo_manager: UndoManager,
+    file_badges: Entity<file_badges::FileBadges>,
+    badge_width_applied: bool,
     state: State,
 }
 
@@ -882,8 +885,42 @@ impl ProjectPanel {
 
             let scroll_handle = UniformListScrollHandle::new();
             let weak_project_panel = cx.weak_entity();
+            let file_badges = cx.new(|cx| file_badges::FileBadges::new(&project, cx));
+            cx.observe_in(&file_badges, window, |this, _, _, cx| {
+                this.update_badge_width(cx);
+                cx.notify();
+            })
+            .detach();
+            cx.subscribe(
+                &file_badges,
+                |this, _, error: &file_badges::BadgeError, cx| {
+                    use workspace::notifications::{
+                        NotificationId, simple_message_notification::MessageNotification,
+                    };
+                    this.workspace
+                        .update(cx, |workspace, cx| {
+                            workspace.show_notification(
+                                NotificationId::unique::<file_badges::FileBadges>(),
+                                cx,
+                                |cx| {
+                                    cx.new(|cx| {
+                                        MessageNotification::new(
+                                            format!("File badges: {}", error.0),
+                                            cx,
+                                        )
+                                    })
+                                },
+                            );
+                        })
+                        .log_err();
+                },
+            )
+            .detach();
+            file_badges.update(cx, |badges, cx| badges.refresh(&project, None, cx));
             let mut this = Self {
                 project: project.clone(),
+                file_badges,
+                badge_width_applied: false,
                 hover_scroll_task: None,
                 fs: workspace.app_state().fs.clone(),
                 focus_handle,
@@ -4982,6 +5019,7 @@ impl ProjectPanel {
                         .map(|group| group.parent)
                 });
                 this.state = new_state;
+                this.update_badge_width(cx);
                 if let Some((worktree_id, entry_id)) = new_selected_entry {
                     this.selection = Some(SelectedEntry {
                         worktree_id,
@@ -6210,6 +6248,64 @@ impl ProjectPanel {
             )
     }
 
+    fn update_badge_width(&mut self, cx: &App) {
+        let badges = self.file_badges.read(cx);
+        if badges.is_empty() && !self.badge_width_applied {
+            return;
+        }
+        self.badge_width_applied = !badges.is_empty();
+        let mut widest = None;
+        let mut row_index = 0;
+        for visible in &self.state.visible_entries {
+            let paths = visible.index.get_or_init(|| {
+                visible
+                    .entries
+                    .iter()
+                    .map(|entry| entry.path.clone())
+                    .collect()
+            });
+            for entry in &visible.entries {
+                let (depth, difference) = self.calculate_depth_and_difference(entry, paths);
+                let group = self.state.test_groups.groups.get(&entry.id);
+                let label_length = if let Some(group) = group {
+                    format!("Tests ({})", group.files.len()).chars().count()
+                } else if entry.path.is_empty() {
+                    self.project
+                        .read(cx)
+                        .worktree_for_id(visible.worktree_id, cx)
+                        .map_or(0, |tree| {
+                            tree.read(cx).root_name().as_unix_str().chars().count()
+                        })
+                } else {
+                    entry
+                        .path
+                        .last_n_components(difference)
+                        .map_or(0, |path| path.as_unix_str().chars().count())
+                };
+                let badge_count = if group.is_some() {
+                    0
+                } else {
+                    entry
+                        .path
+                        .ancestors()
+                        .take(difference.max(1))
+                        .map(|path| badges.for_path(visible.worktree_id, &Arc::from(path)).len())
+                        .sum::<usize>()
+                };
+                let depth =
+                    depth + usize::from(self.state.test_groups.members.contains_key(&entry.id));
+                let width =
+                    item_width_estimate(depth, label_length, entry.canonical_path.is_some())
+                        + badge_count * 3;
+                if widest.is_none_or(|(_, previous)| width > previous) {
+                    widest = Some((row_index, width));
+                }
+                row_index += 1;
+            }
+        }
+        self.state.max_width_item_index = widest.map(|(index, _)| index);
+    }
+
     fn render_entry(
         &self,
         entry_id: ProjectEntryId,
@@ -6896,6 +6992,8 @@ impl ProjectPanel {
                                     this.children(self.render_folder_elements(
                                         folded_ancestors,
                                         entry_id,
+                                        worktree_id,
+                                        &details.path,
                                         file_name,
                                         path_style,
                                         is_sticky,
@@ -6910,16 +7008,25 @@ impl ProjectPanel {
                                     ))
                                 }
 
-                                None => this.child(
-                                    Label::new(file_name)
-                                        .single_line()
-                                        .color(filename_text_color)
-                                        .when(
-                                            settings.bold_folder_labels && kind.is_dir(),
-                                            |this| this.weight(FontWeight::SEMIBOLD),
-                                        )
-                                        .into_any_element(),
-                                ),
+                                None => this
+                                    .child(
+                                        Label::new(file_name)
+                                            .single_line()
+                                            .color(filename_text_color)
+                                            .when(
+                                                settings.bold_folder_labels && kind.is_dir(),
+                                                |this| this.weight(FontWeight::SEMIBOLD),
+                                            )
+                                            .into_any_element(),
+                                    )
+                                    .children(
+                                        self.file_badges
+                                            .read(cx)
+                                            .for_path(worktree_id, &details.path)
+                                            .iter()
+                                            .enumerate()
+                                            .map(|(index, badge)| badge.render(index)),
+                                    ),
                             })
                     })
                     .on_secondary_mouse_down(cx.listener(
@@ -6970,6 +7077,8 @@ impl ProjectPanel {
         &self,
         folded_ancestors: &FoldedAncestors,
         entry_id: ProjectEntryId,
+        worktree_id: WorktreeId,
+        path: &Arc<RelPath>,
         file_name: String,
         path_style: PathStyle,
         is_sticky: bool,
@@ -6989,17 +7098,28 @@ impl ProjectPanel {
         let active_index = folded_ancestors.active_index();
         let components_len = components.len();
         let delimiter = SharedString::new(path_style.primary_separator());
+        let badges: Vec<_> = path
+            .ancestors()
+            .take(components_len)
+            .map(|path| {
+                self.file_badges
+                    .read(cx)
+                    .for_path(worktree_id, &Arc::from(path))
+                    .to_vec()
+            })
+            .collect();
 
         let path_component_elements =
             components
                 .into_iter()
                 .enumerate()
                 .map(move |(index, component)| {
-                    div()
+                    h_flex()
                         .id(SharedString::from(format!(
                             "project_panel_path_component_{}_{index}",
                             entry_id.to_usize()
                         )))
+                        .debug_selector(|| format!("project-panel-component-{component}"))
                         .when(index == 0, |this| this.ml_neg_0p5())
                         .px_0p5()
                         .rounded_xs()
@@ -7091,6 +7211,14 @@ impl ProjectPanel {
                                 .when(index == active_index && is_active_or_marked, |this| {
                                     this.underline()
                                 }),
+                        )
+                        .children(
+                            badges
+                                .get(components_len - 1 - index)
+                                .into_iter()
+                                .flatten()
+                                .enumerate()
+                                .map(|(index, badge)| badge.render(index)),
                         )
                         .into_any()
                 });

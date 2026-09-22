@@ -540,6 +540,7 @@ impl VsCodeSettings {
             worktree: self.worktree_settings_content(),
             lsp: Default::default(),
             terminal: None,
+            project_panel: None,
             dap: Default::default(),
             context_servers: self.context_servers(),
             context_server_timeout: None,
@@ -883,6 +884,7 @@ impl VsCodeSettings {
             git_status_indicator: None,
             group_test_files: None,
             test_file_patterns: None,
+            file_badges: None,
         };
 
         if let (Some(false), Some(false)) = (

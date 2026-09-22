@@ -39,6 +39,7 @@ pub struct ProjectPanelSettings {
     pub git_status_indicator: bool,
     pub group_test_files: bool,
     pub test_file_patterns: Vec<String>,
+    pub file_badges: Vec<settings::FileBadgeRule>,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
@@ -149,6 +150,13 @@ impl Settings for ProjectPanelSettings {
             git_status_indicator: project_panel.git_status_indicator.unwrap(),
             group_test_files: project_panel.group_test_files.unwrap(),
             test_file_patterns: project_panel.test_file_patterns.unwrap(),
+            file_badges: content
+                .project
+                .project_panel
+                .as_ref()
+                .and_then(|panel| panel.file_badges.clone())
+                .or(project_panel.file_badges)
+                .unwrap_or_default(),
         }
     }
 }

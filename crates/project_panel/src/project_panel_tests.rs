@@ -12733,6 +12733,134 @@ fn assert_drag_state_cleared(panel: &ProjectPanel) {
     assert_eq!(panel.previous_drag_position, None);
 }
 
+#[gpui::test]
+async fn test_file_badges_folded_paths_and_test_groups(cx: &mut TestAppContext) {
+    init_test_with_editor(cx);
+    cx.update(|cx| {
+        cx.set_global(db::AppDatabase::test_new());
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                let panel = settings.project_panel.get_or_insert_default();
+                panel.auto_fold_dirs = Some(true);
+                panel.file_icons = Some(false);
+                panel.group_test_files = Some(true);
+                panel.file_badges = Some(serde_json::from_value(json!([
+                    {"filename":"*.bazel", "content_regex":"rust_binary", "emoji":"🦀", "icon_level":2},
+                    {"filename":"*_test.rs", "content_regex":"marker", "icon":"code"}
+                ])).expect("valid badge rules"));
+            });
+        });
+    });
+    let (panel, mut cx) = open_panel_with_tree(
+        json!({"a":{"b":{"c":{"BUILD.bazel":"rust_binary()", "sample_test.rs":"marker"}}}}),
+        size(px(800.), px(600.)),
+        cx,
+    )
+    .await;
+    cx.run_until_parked();
+    cx.executor().advance_clock(Duration::from_millis(200));
+    cx.run_until_parked();
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    let badge = cx
+        .debug_bounds("file-badge-Emoji(\"🦀\")")
+        .expect("folder badge is rendered");
+    let parent = cx
+        .debug_bounds("project-panel-component-b")
+        .expect("folded parent is rendered");
+    let child = cx
+        .debug_bounds("project-panel-component-c")
+        .expect("folded child is rendered");
+    assert!(parent.contains(&badge.center()));
+    assert!(badge.right() <= child.left());
+    assert!(cx.debug_bounds("file-badge-Icon(Code)").is_none());
+    panel.update_in(&mut cx, |panel, window, cx| {
+        panel.expand_all_entries(&ExpandAllEntries, window, cx);
+    });
+    cx.run_until_parked();
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    assert!(cx.debug_bounds("file-badge-Icon(Code)").is_some());
+    let fs = panel.update_in(&mut cx, |panel, _, cx| panel.project.read(cx).fs().clone());
+    fs.write(Path::new("/root/a/b/c/BUILD.bazel"), b"rust_library()")
+        .await
+        .expect("save file");
+    cx.run_until_parked();
+    cx.executor().advance_clock(Duration::from_millis(200));
+    cx.run_until_parked();
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    assert!(cx.debug_bounds("file-badge-Emoji(\"🦀\")").is_none());
+    assert!(cx.debug_bounds("file-badge-Icon(Code)").is_some());
+}
+
+#[gpui::test]
+async fn test_file_badges_project_settings_update_live(cx: &mut TestAppContext) {
+    init_test_with_editor(cx);
+    cx.update(|cx| cx.set_global(db::AppDatabase::test_new()));
+    let (panel, mut cx) = open_panel_with_tree(
+        json!({"BUILD.bazel":"rust_binary()"}),
+        size(px(800.), px(600.)),
+        cx,
+    )
+    .await;
+    let worktree_id = panel.update_in(&mut cx, |panel, _, cx| {
+        panel
+            .project
+            .read(cx)
+            .visible_worktrees(cx)
+            .next()
+            .expect("fixture worktree")
+            .read(cx)
+            .id()
+    });
+    for (settings, expected) in [
+        (
+            r#"{"project_panel":{"file_badges":[{"filename":"*.bazel","content_regex":"rust_binary","emoji":"🦀"}]}}"#,
+            true,
+        ),
+        (r#"{"project_panel":{"file_badges":[]}}"#, false),
+    ] {
+        cx.update(|_, cx| {
+            cx.update_global::<SettingsStore, _>(|store, cx| {
+                store
+                    .set_local_settings(
+                        worktree_id,
+                        settings::LocalSettingsPath::InWorktree(RelPath::empty_arc()),
+                        settings::LocalSettingsKind::Settings,
+                        Some(settings),
+                        cx,
+                    )
+                    .expect("apply project settings");
+            });
+        });
+        cx.run_until_parked();
+        cx.executor().advance_clock(Duration::from_millis(200));
+        cx.run_until_parked();
+        panel.update_in(&mut cx, |panel, _, cx| {
+            let settings = ProjectPanelSettings::get(
+                Some(settings::SettingsLocation {
+                    worktree_id,
+                    path: rel_path("BUILD.bazel"),
+                }),
+                cx,
+            );
+            assert_eq!(
+                !settings.file_badges.is_empty(),
+                expected,
+                "project rules resolved"
+            );
+            assert_eq!(
+                !panel.file_badges.read(cx).is_empty(),
+                expected,
+                "badge worker completed"
+            );
+        });
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        assert_eq!(
+            cx.debug_bounds("file-badge-Emoji(\"🦀\")").is_some(),
+            expected
+        );
+    }
+}
+
 async fn open_panel_with_tree(
     tree: serde_json::Value,
     window_size: Size<Pixels>,

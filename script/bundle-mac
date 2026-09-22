@@ -22,7 +22,7 @@ Build the application bundle for macOS.
 Options:
   -d    Compile in debug mode
   -o    Open dir with the resulting DMG or launch the app itself in local mode.
-  -i    Install the resulting DMG into /Applications.
+  -i    Install the application bundle into /Applications, skipping DMG creation.
   -h    Display this help and exit.
   "
 }
@@ -46,6 +46,14 @@ done
 
 shift $((OPTIND-1))
 
+if ! xcrun --sdk macosx metal --version; then
+    echo "Zed requires Xcode's Metal Toolchain. Install it with:" >&2
+    echo "  xcodebuild -downloadComponent MetalToolchain" >&2
+    exit 1
+fi
+
+CARGO_TARGET_DIR=$(cargo metadata --no-deps --format-version 1 | plutil -extract target_directory raw -o - -)
+export CARGO_TARGET_DIR
 
 # Get release channel
 pushd crates/zed
@@ -80,6 +88,8 @@ else
     echo "Unsupported architecture $target_triple"
     exit 1
 fi
+
+build_output_directory="${CARGO_TARGET_DIR}/${target_triple}/${target_dir}"
 
 # Generate the licenses first, so they can be baked into the binaries
 script/generate-licenses
@@ -227,11 +237,15 @@ function sign_app_binaries() {
     if [ "$local_install" = true ]; then
         rm -rf "/Applications/$bundle_name"
         mv "$app_path" "/Applications/$bundle_name"
+        mkdir -p "$HOME/.local/bin"
+        ln -sfn "/Applications/$bundle_name/Contents/MacOS/cli" "$HOME/.local/bin/zed"
         echo "Installed application bundle: /Applications/$bundle_name"
+        echo "To run Zed from your terminal, add ~/.local/bin to your PATH."
         if [ "$open_result" = true ]; then
             echo "Opening /Applications/$bundle_name"
             open "/Applications/$bundle_name"
         fi
+        return
     elif [ "$open_result" = true ]; then
         open "$app_path"
     fi
@@ -243,18 +257,18 @@ function sign_app_binaries() {
             echo "$app_path"
         fi
     else
-        dmg_target_directory="target/${target_triple}/${target_dir}"
+        dmg_target_directory="${build_output_directory}"
         dmg_source_directory="${dmg_target_directory}/dmg"
         dmg_file_path="${dmg_target_directory}/Zed-${arch_suffix}.dmg"
         xcode_bin_dir_path="$(xcode-select -p)/usr/bin"
 
-        rm -rf ${dmg_source_directory}
-        mkdir -p ${dmg_source_directory}
+        rm -rf "${dmg_source_directory}"
+        mkdir -p "${dmg_source_directory}"
         mv "${app_path}" "${dmg_source_directory}"
         notarization_key_file=$(mktemp)
 
         echo "Adding symlink to /Applications to ${dmg_source_directory}"
-        ln -s /Applications ${dmg_source_directory}
+        ln -s /Applications "${dmg_source_directory}"
 
         echo "Creating final DMG at ${dmg_file_path} using ${dmg_source_directory}"
         hdiutil create -volname Zed -srcfolder "${dmg_source_directory}" -ov -format UDZO "${dmg_file_path}"
@@ -262,7 +276,7 @@ function sign_app_binaries() {
         # If someone runs this bundle script locally, a symlink will be placed in `dmg_source_directory`.
         # This symlink causes CPU issues with Zed if the Zed codebase is the project being worked on, so we simply remove it for now.
         echo "Removing symlink to /Applications from ${dmg_source_directory}"
-        rm ${dmg_source_directory}/Applications
+        rm "${dmg_source_directory}/Applications"
 
         echo "Adding license agreement to DMG"
         npm install --global dmg-license minimist
@@ -270,7 +284,7 @@ function sign_app_binaries() {
 
         if [[ $can_code_sign = true ]]; then
             echo "Notarizing DMG with Apple"
-            /usr/bin/codesign --deep --force --timestamp --options runtime --sign "$IDENTITY" "$(pwd)/${dmg_file_path}" -v
+            /usr/bin/codesign --deep --force --timestamp --options runtime --sign "$IDENTITY" "${dmg_file_path}" -v
             echo "$APPLE_NOTARIZATION_KEY" > "$notarization_key_file"
             "${xcode_bin_dir_path}/notarytool" submit --wait --key "$notarization_key_file" --key-id "$APPLE_NOTARIZATION_KEY_ID" --issuer "$APPLE_NOTARIZATION_ISSUER_ID" "${dmg_file_path}"
             rm "$notarization_key_file"
@@ -278,7 +292,7 @@ function sign_app_binaries() {
         fi
 
         if [ "$open_result" = true ]; then
-            open $dmg_target_directory
+            open "$dmg_target_directory"
         fi
     fi
 }
@@ -298,14 +312,14 @@ function extract_debug_symbols() {
         return
     fi
     debug_symbols_extracted=true
-    if ! dsymutil --flat "target/${target_triple}/${target_dir}/zed" 2> target/dsymutil.log; then
+    if ! dsymutil --flat "${build_output_directory}/zed" 2> "${CARGO_TARGET_DIR}/dsymutil.log"; then
         echo "dsymutil failed"
-        cat target/dsymutil.log
+        cat "${CARGO_TARGET_DIR}/dsymutil.log"
         exit 1
     fi
-    if ! dsymutil --flat "target/${target_triple}/${target_dir}/remote_server" 2> target/dsymutil.log; then
+    if ! dsymutil --flat "${build_output_directory}/remote_server" 2> "${CARGO_TARGET_DIR}/dsymutil.log"; then
         echo "dsymutil failed"
-        cat target/dsymutil.log
+        cat "${CARGO_TARGET_DIR}/dsymutil.log"
         exit 1
     fi
 }
@@ -320,8 +334,8 @@ function upload_debug_symbols() {
         for attempt in 1 2 3; do
             echo "Sentry upload attempt $attempt..."
             if sentry-cli debug-files upload --include-sources --wait -p zed -o zed-dev \
-                "target/${target_triple}/${target_dir}/zed.dwarf" \
-                "target/${target_triple}/${target_dir}/remote_server.dwarf"; then
+                "${build_output_directory}/zed.dwarf" \
+                "${build_output_directory}/remote_server.dwarf"; then
                 break
             else
                 echo "Sentry upload failed on attempt $attempt"
@@ -343,14 +357,14 @@ upload_debug_symbols
 # also keep symbols recoverable when the sentry upload is skipped.
 if [[ "$target_dir" == "release" && "$local_install" != true ]]; then
     extract_debug_symbols
-    strip -x "target/${target_triple}/${target_dir}/zed"
-    strip -x "target/${target_triple}/${target_dir}/cli"
-    strip -x "target/${target_triple}/${target_dir}/remote_server"
+    strip -x "${build_output_directory}/zed"
+    strip -x "${build_output_directory}/cli"
+    strip -x "${build_output_directory}/remote_server"
 fi
 
-cp target/${target_triple}/${target_dir}/zed "${app_path}/Contents/MacOS/zed"
-cp target/${target_triple}/${target_dir}/cli "${app_path}/Contents/MacOS/cli"
+cp "${build_output_directory}/zed" "${app_path}/Contents/MacOS/zed"
+cp "${build_output_directory}/cli" "${app_path}/Contents/MacOS/cli"
 sign_app_binaries
 
-sign_binary "target/$target_triple/release/remote_server"
-gzip -f --stdout --best target/$target_triple/release/remote_server > target/zed-remote-server-macos-$arch_suffix.gz
+sign_binary "${build_output_directory}/remote_server"
+gzip -f --stdout --best "${build_output_directory}/remote_server" > "${CARGO_TARGET_DIR}/zed-remote-server-macos-$arch_suffix.gz"

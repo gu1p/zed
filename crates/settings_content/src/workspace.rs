@@ -921,6 +921,34 @@ pub struct ProjectPanelSettingsContent {
     /// Filename globs identifying test files when `group_test_files` is enabled.
     /// Patterns match the filename, independently in every directory.
     pub test_file_patterns: Option<Vec<String>>,
+    /// Badges selected by filename and saved content, shown only in the project panel.
+    /// Project settings replace the inherited list. An empty list disables badges.
+    pub file_badges: Option<Vec<FileBadgeRule>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FileBadgeRule {
+    /// Case-sensitive filename glob, matched independently in every folder.
+    pub filename: String,
+    /// Rust regex searched against saved UTF-8 file content. Supports inline flags.
+    pub content_regex: String,
+    /// Emoji to display. Specify exactly one of `emoji` and `icon`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emoji: Option<String>,
+    /// Built-in Zed icon name in snake_case, such as `binary` or `code`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    /// 0 targets the file, 1 its parent, 2 its grandparent, up to the project root.
+    #[serde(default)]
+    pub icon_level: u32,
+}
+
+#[with_fallible_options]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize, JsonSchema, MergeFrom)]
+pub struct ProjectPanelOverrides {
+    /// Replaces the inherited file badge rules for files in this folder.
+    pub file_badges: Option<Vec<FileBadgeRule>>,
 }
 
 /// Controls the width of the git diff hunk indicators in the gutter.

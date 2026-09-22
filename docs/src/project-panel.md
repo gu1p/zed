@@ -93,6 +93,73 @@ delete its files normally. The group itself cannot be renamed, moved, or deleted
 Git changes retain their colors, and collapsed groups show their combined Git
 status and diagnostic indicator.
 
+### File Badges {#file-badges}
+
+Open the Settings Editor, go to **Panels > Project Panel**, and find **File
+Badges**. Choose **Edit in settings.json** to configure rules that add emoji or
+built-in icons beside file and folder names.
+
+Or run {#action zed::OpenSettingsFile} to edit your user settings.json. On macOS,
+this is `~/.config/zed/settings.json`. For project-specific rules, run
+{#action zed::OpenProjectSettings} to edit the project's `.zed/settings.json`.
+Add `file_badges` inside your existing `project_panel` object:
+
+```json [settings]
+{
+  "project_panel": {
+    "file_badges": [
+      {
+        "filename": "*.bazel",
+        "content_regex": "\\brust_binary\\s*\\(",
+        "emoji": "🦀",
+        "icon_level": 1
+      },
+      {
+        "filename": "{BUILD,*.bazel}",
+        "content_regex": "\\brust_library\\s*\\(",
+        "icon": "code",
+        "icon_level": 0
+      }
+    ]
+  }
+}
+```
+
+The first rule adds 🦀 to the parent folder of a matching Bazel file, even when
+the folder is collapsed. The second adds a code icon to matching files.
+
+| Field           | Meaning                                                                             |
+| --------------- | ----------------------------------------------------------------------------------- |
+| `filename`      | Case-sensitive glob matched against the filename in every folder.                   |
+| `content_regex` | Regex searched against the saved file contents. Both conditions must match.         |
+| `emoji`         | Emoji to display; specify exactly one of `emoji` and `icon`.                        |
+| `icon`          | Built-in Zed icon name, such as `binary`, `code`, `check`, or `book`.               |
+| `icon_level`    | `0` for the file (default), `1` for its parent, `2` for its grandparent, and so on. |
+
+A rule targeting an ancestor above the project root has no effect. All distinct
+badges appear in rule order, with repeated symbols shown only once. Folded
+folders retain badges beside the corresponding path component. Existing file
+icons, Git status, and diagnostics remain visible.
+
+Regexes use Rust regex syntax, including flags such as `(?m)` for multiline
+anchors and `(?i)` for case-insensitive content matching. They search text, so a
+match inside a comment or string also counts. Escape backslashes in JSON as
+shown above.
+
+Project and nested folder settings replace the inherited rule list. Set
+`"file_badges": []` to disable badges. Changes apply automatically when you save
+the settings file.
+
+Badges update on save and on external file changes. Matching applies to local,
+nonignored UTF-8 text files up to 2 MiB, including files inside collapsed
+folders, and respects project scan exclusions. Binary and special files are
+skipped. Unsaved edits and remote projects are not matched.
+
+Results are cached across restarts. Scrolling and expanding folders reuse the
+cache. File metadata changes invalidate cached matches; changing only the
+symbol or `icon_level` reuses them. Offline edits that preserve the file's inode,
+size, and modification time cannot be detected by metadata validation.
+
 ## Selecting Multiple Entries
 
 Hold `shift` while pressing the up/down arrow keys to mark additional entries.

@@ -60,6 +60,7 @@ pub struct ProjectSettingsContent {
     pub lsp: LspSettingsMap,
 
     pub terminal: Option<ProjectTerminalSettingsContent>,
+    pub project_panel: Option<crate::ProjectPanelOverrides>,
 
     /// Configuration for Debugger-related features
     #[serde(default)]
@@ -90,7 +91,7 @@ pub struct ProjectSettingsContent {
 crate::fallible_options::flattened_deserialize!(ProjectSettingsContent {
     sections: { all_languages, worktree },
     options: {
-        terminal, context_server_timeout, load_direnv, git_hosting_providers, disable_ai,
+        terminal, project_panel, context_server_timeout, load_direnv, git_hosting_providers, disable_ai,
     },
     defaults: { lsp, dap, context_servers },
 });
